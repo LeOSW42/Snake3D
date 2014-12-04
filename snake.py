@@ -21,7 +21,7 @@ dimension = 8
 # Quitter le programme
 perdu = 0
 # On place notre snake au bon endroit
-snake = deque([[3,3,3],[3,4,3],[3,5,3]])
+snake = deque([[5,3,3],[6,3,3],[7,3,3]])
 champi = deque([2,1,1])
 #         x y z
 # Avec y vers le haut, x vers la droite et z vers l'arrière
@@ -166,7 +166,7 @@ def ActualiserCube():
 	for i in range(dimension*dimension):
 		matrice_leds.append([0] * dimension)
 	# On met des 1 pour le snake
-	for i in range(len(snake)):
+	for i in range(0,len(snake)):
 		ligne = "%s%s" %(dimension-1-snake[i][1],dimension-1-snake[i][2]) # On concatene nos deux valeurs
 		result = 0
 		place = 1
@@ -195,7 +195,7 @@ def ActualiserCube():
 	# On balance la sauce
 	Envoyer()
 	
-	Mafenetre.after(100,ActualiserCube)
+	Mafenetre.after(5,ActualiserCube)
 
 ##############################################################
 # Gestion des touches utilisées
