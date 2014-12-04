@@ -1,11 +1,36 @@
 #!/usr/bin/env python # -*- coding: utf8 -*-
 
+#######################################
+#                                     # 
+#    ###                              #
+#   #   #   ###       #         #     #
+#    ###    #  #      #         ##    #
+#   #   #   ###   ##  ###   ##  #     #
+#   #   #   # #  #  # #  # #  # #     #
+#    ###    #  #  ##  ###   ##   ##   #
+#                                     #
+#######################################
+#
+# UN SNAKE POUR UN CUBE LED
+#
+# Dimensions maximales du cube : 9x9x9
+# 
+# Requis : python, python-tk, pylibftdi
+# Fonctionnalités :
+#    * Déplacement du snake
+#    * Champignons aléatoires
+#    * Détection erreurs (croquage queue et murs)
+#    * Grandissement lors des miam champis
+#    * Couleurs (champi rouge, tête violet, corps bleu (ou rouge si mort))
+
+# ~~~~~~~~~~~~~~~~~~~ Bibliothèques ~~~~~~~~~~~~~~~~~~~
+
 # Bibliothèques pour ftdi, calculs et gestion du temps
 import sys
 from math import *
 from pylibftdi import Device
-from collections import deque
-from random import randint
+from collections import deque # Permet de faires des opérations avancés sur les listes (rotate)
+from random import randint    # Permet de créer des chiffres aléatoires
 from time import sleep
 
 # Bibliothèque pour interface graphique
@@ -16,24 +41,31 @@ except ImportError:
 	# for Python3
 	from tkinter import *
 
-# Dimension du cube XxXxX (maximum 9)
+# ~~~~~~~~~~~~~~~~~~~ Variables globales ~~~~~~~~~~~~~~~~~~~
+
+# Taille du cube
 dimension = 8
-# Quitter le programme
+# Drapeau mis à un si perdu
 perdu = 0
-# On place notre snake au bon endroit
+# Snake (avec initialisation sur un bord)
+# 3 de long par défaut
 snake = deque([[5,3,3],[6,3,3],[7,3,3]])
+# Champignon du niveau 1 (FIXME : Pourrait être aléatoire)
 champi = deque([2,1,1])
-#         x y z
-# Avec y vers le haut, x vers la droite et z vers l'arrière
 # Direction de départ
 direction = 'left'
 # Matrice des leds a allumer
 matrice_leds = []
+# Initialisation de la matrice de bonne taille avec des zéros (FIXME : Inutile)
 for i in range(dimension*dimension):
 	matrice_leds.append([0] * dimension)
 
+
+
 ##############################################################
-# Fonction de Robin pour envoyer la matrice au ftdi
+# Fonction d'envoi la matrice au ftdi (Auteur : Robin)
+# Nécessite la matrice_leds
+##############################################################
 
 def Envoyer():
 	global dimension
@@ -87,8 +119,12 @@ def Envoyer():
 		#	Envoyer_Trame()
 		print('FTDI non détecté')
 
+
+
 ##############################################################
-# Fonction pour actualiser le cube
+# Fonction pour actualiser l'affichage du cube (Auteur : Léo)
+# Renvoi matrice_leds en prennant en compte les positions du snake et des champis
+##############################################################
 
 def ActualiserCube():
 	global snake
@@ -97,18 +133,20 @@ def ActualiserCube():
 	global champi
 	global perdu
 	
-	# Si on a perdu on quitte
+	# Dans un premier temps, si le jeu est fini, quitter
 	if (perdu==1):
 		Mafenetre.destroy()
 	
+	# On met en cache la queue du snake (dernière case) pour pouvoir agrandir le snake si besoin est
 	queue = [0,0,0]
-	# On met en cache la queue du snake (pour pouvoir l'agrandir)
 	queue[0] = snake[len(snake)-1][0]
 	queue[1] = snake[len(snake)-1][1]
 	queue[2] = snake[len(snake)-1][2]
 	
+	# Si on a pas perdu, le snake doit avancer
 	if(perdu != 1):
-		# On raccourcit le corps du snake
+		# On raccourci le snake (la queue passe à la tête)
+		# C'est une décalage à droite de la liste
 		snake.rotate(1)
 		
 		# On bouge la tête dans le bon sens
@@ -137,77 +175,101 @@ def ActualiserCube():
 			snake[0][1] = snake[1][1]
 			snake[0][2] = snake[1][2] - 1
 
-
-
-	# Gestion des erreurs
+	# Gestion des erreurs pouvant entrainer une défaite
+	# Dans un premier temps, si on est encore en vie et que l'on rentre dans un mur
 	if(perdu != 1 and (snake[0][0] < 0 or snake[0][1] < 0 or snake[0][2] < 0 or snake[0][0] > dimension-1 or snake[0][1] > dimension-1 or snake[0][2] > dimension-1)):
+		# On passe le drapeu à 1
 		perdu = 1
+		# On fait reculer le snake pour anuler l'avancement qui n'as pas lieu d'être
 		snake.rotate(-1)
+		# On restitue la queue au snake (car elle a été effacée précédement)
 		snake[len(snake)-1] = [queue[0],queue[1],queue[2]]
-
+	# On teste ici si le snake mange sa queue
+	# Pour chaque morceau de snake (tête exclue) on regarde si il n'est pas à la même position que la tête
+	# FIXME : Est-ce que le snake peut vraiment manger la deuxième et troisième case
 	for i in range(1,len(snake)):
 		if(snake[0][0] == snake[i][0] and snake[0][1] == snake[i][1] and snake[0][2] == snake[i][2]):
 			perdu = 1
 
-	# Si on a bouffé le champignon
+	# Si le snake mange un champignon (si sa tête a la position d'un champignon)
 	if(snake[0][0] == champi[0] and snake[0][1] == champi[1] and snake[0][2] == champi[2]):
+		# On génère un champignon à une position aléatoire
 		champi[0] = randint(0, dimension-1)
 		champi[1] = randint(0, dimension-1)
 		champi[2] = randint(0, dimension-1)
+		# On rajoute une case à la liste du snake (l'ajout de fait à droite, donc à la queue)
 		snake.append([queue[0],queue[1],queue[2]])
+		# On actualise le niveau dans la fenêtre graphique
 		Entete.config(text="Niveau : %s" %(len(snake)-3))
 		
-
 	# On efface la matrice	
 	matrice_leds = []
-
-	# On génère la matrice
-	# Uniquement des zéros dans un premier temps
+	# On remplit la matrice avec le bon nombre de zéros
 	for i in range(dimension*dimension):
 		matrice_leds.append([0] * dimension)
-	# On met des 1 pour le snake
+
+	# On remplace les zéros si il y a des éléments à afficher
+	# On s'occupe du snake dans un premier temps
+	# Pour chaque case du snake
 	for i in range(0,len(snake)):
-		ligne = "%s%s" %(dimension-1-snake[i][1],dimension-1-snake[i][2]) # On concatene nos deux valeurs
+		# Là c'est un calcul complexe, transformation de nos coordonnées x, y et z au x, plan zOy de Robin
+		# Dans un premier temps, on inverse nos y et z, et on concatène nos deux valeurs
+		ligne = "%s%s" %(dimension-1-snake[i][1],dimension-1-snake[i][2])
+		# Ensuite, On passe d'une base 8 (si dimension = 8) à une base 10 (c'est une sorte de modulo)
 		result = 0
 		place = 1
-		# On passe la valeur dans la bonne dimension
 		for j in range (len (ligne)):
 			result += int (ligne[j]) * place
 			place *= dimension
+		# On a alors la ligne de la matrice_leds
 		ligne = result
+		# Si on est au premier point (la tête), on l'affiche en violet
 		if (i==0):
 			matrice_leds[ligne][snake[i][0]] = 3 # La tête en violet
+		# Sinon, et si on est vivant, le corps en bleu
 		elif perdu!=1:
 			matrice_leds[ligne][snake[i][0]] = 2 # le corps en bleu
+		# Enfin, si on est mort, le corps en rouge
 		else:
 			matrice_leds[ligne][snake[i][0]] = 1 # le corps en rouge
-			
-	ligne = "%s%s" %(dimension-1-champi[1],dimension-1-champi[2]) # On concatene nos deux valeurs
+	
+	# Même magouille de conversion pour les coordonnées du champignon
+	# Concaténation de nos deux valeurs y et z
+	ligne = "%s%s" %(dimension-1-champi[1],dimension-1-champi[2])
+	# On passe dans la bonne base (notre espèce de modulo)
 	result = 0
 	place = 1
-	# On passe la valeur dans la bonne dimension
 	for j in range (len (ligne)):
 		result += int (ligne[j]) * place
 		place *= dimension
 	ligne = result
-	matrice_leds[ligne][champi[0]] = 1
+	# On affiche le champignon en rouge
+	matrice_leds[ligne][champi[0]] = 1 # le champi en rouge
 	
-	# On balance la sauce
+	# On balance la sauce !!!
 	Envoyer()
 	
+	# On rapelle cette fonction dans 5 ms (raffraichissement du cube)
+	# !!! Ne pas mettre zéro sinon les interruption du clavier ne pourront plus se lancer !!!
+	# FIXME : Un variable pour gérer la vitesse serait sympa
 	Mafenetre.after(5,ActualiserCube)
 
+
+
 ##############################################################
-# Gestion des touches utilisées
+# Fonction pour actualiser la direction en fonction de la touche pressée (Auteur : Léo)
+# Empêche entre autre les demi tours sur place
+##############################################################
 
 def Touche(event):
 	global direction
 	
 	# On récupère la touche pressée
 	touche = event.keysym
-	if (touche=='x'): # On quitte la boucle si on presse x
+	# Si on presse x on quitte la fenêtre
+	if (touche=='x'):
 		Mafenetre.destroy()
-	# On update la direction
+	# Dans un cas autre, on actualise la direction
 	elif (touche=='Up' and direction != 'down'):
 		direction = 'up'
 	elif (touche=='Down' and direction != 'up'):
@@ -221,26 +283,32 @@ def Touche(event):
 	elif (touche=='q' and direction != 'back'):
 		direction = 'front'
 
+
+
 #####################################################################################################
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
 #####################################################################################################
-# Création de la fenêtre principale
+
+# ~~~~~~~~~~~~~~~~~~~ Fenêtre principale ~~~~~~~~~~~~~~~~~~~
+
 Mafenetre = Tk()
 Mafenetre.title('Snake 3D')
 
-# Image centrale
+# On affiche l'image avec les contrôles
 ImgDirections = Canvas(Mafenetre, width=216, height=216)
 ImgDirections.grid(row=1, column=1)
 jpgImgDirections = PhotoImage(file="directions.png")
 ImgDirections.create_image(0, 0, image=jpgImgDirections, anchor=NW)
 
+# On met une ligne au dessus avec le niveau indiqué
+# FIXME : C'est toujours zéro au lancement, calcul inutile
 Entete = Label(Mafenetre, text="Niveau : %s" %(len(snake)-3))
 Entete.grid(row=0, column=1)
 
-# La méthode bind() permet de lier un événement avec une fonction :
-# un appui sur une touche du clavier provoquera l'appel de la fonction utilisateur Touche()
+# Un appui sur le clavier appelle la fonction Touche() qui actualisera la direction
 Mafenetre.bind('<Key>', Touche)
-# La c'est pour appeler l'actualisation du cube
+# On appelle directement l'actualisation du cube, ce sera encuite bouclé dans la fonction
 Mafenetre.after(0,ActualiserCube)
+# On rentre dans le while 1 qui permet de tout faire tourner
 Mafenetre.mainloop()
