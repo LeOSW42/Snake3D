@@ -16,12 +16,17 @@
 # Dimensions maximales du cube : 9x9x9
 # 
 # Requis : python, python-tk, pylibftdi
+#
 # Fonctionnalités :
 #    * Déplacement du snake
 #    * Champignons aléatoires
 #    * Détection erreurs (croquage queue et murs)
 #    * Grandissement lors des miam champis
 #    * Couleurs (champi rouge, tête violet, corps bleu (ou rouge si mort))
+# FIXME : Un mode pause (actif au lancement)
+#
+# Auteurs : Robin, Léo (et autres)
+
 
 # ~~~~~~~~~~~~~~~~~~~ Bibliothèques ~~~~~~~~~~~~~~~~~~~
 
