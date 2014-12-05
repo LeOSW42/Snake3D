@@ -323,6 +323,8 @@ ImgDirections.create_image(0, 0, image=jpgImgDirections, anchor=NW)
 # FIXME : C'est toujours zéro au lancement, calcul inutile
 Entete = Label(Mafenetre, text="Niveau : %s" %(len(snake)-3))
 Entete.grid(row=0, column=1)
+Commandes = Label(Mafenetre, text="Echap : Quitter le jeu\r\nSpace : Mode pause", justify=LEFT)
+Commandes.grid(row=2, column=1)
 
 # Un appui sur le clavier appelle la fonction Touche() qui actualisera la direction
 Mafenetre.bind('<Key>', Touche)
