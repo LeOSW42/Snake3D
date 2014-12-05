@@ -23,7 +23,7 @@
 #    * Détection erreurs (croquage queue et murs)
 #    * Grandissement lors des miam champis
 #    * Couleurs (champi rouge, tête violet, corps bleu (ou rouge si mort))
-# FIXME : Un mode pause (actif au lancement)
+#    * Un mode pause (actif au lancement)
 #
 # Auteurs : Robin, Léo (et autres)
 
@@ -52,6 +52,8 @@ except ImportError:
 dimension = 8
 # Drapeau mis à un si perdu
 perdu = 0
+# Drapeau de pause du jeu
+pause = 1
 # Snake (avec initialisation sur un bord)
 # 3 de long par défaut
 snake = deque([[5,3,3],[6,3,3],[7,3,3]])
@@ -137,6 +139,7 @@ def ActualiserCube():
 	global dimension
 	global champi
 	global perdu
+	global pause
 	
 	# Dans un premier temps, si le jeu est fini, quitter
 	if (perdu==1):
@@ -254,10 +257,12 @@ def ActualiserCube():
 	# On balance la sauce !!!
 	Envoyer()
 	
-	# On rapelle cette fonction dans 5 ms (raffraichissement du cube)
+	# On rapelle cette fonction dans 100 ms (raffraichissement du cube)
 	# !!! Ne pas mettre zéro sinon les interruption du clavier ne pourront plus se lancer !!!
+	# Seulement si on est pas en pause
 	# FIXME : Un variable pour gérer la vitesse serait sympa
-	Mafenetre.after(5,ActualiserCube)
+	if (pause != 1):
+		Mafenetre.after(100,ActualiserCube)
 
 
 
@@ -268,12 +273,20 @@ def ActualiserCube():
 
 def Touche(event):
 	global direction
+	global pause
 	
 	# On récupère la touche pressée
 	touche = event.keysym
 	# Si on presse x on quitte la fenêtre
-	if (touche=='x'):
+	if (touche=='Escape'):
 		Mafenetre.destroy()
+	# Si on presse espace on se met en pause ou on en sort
+	if (touche=='space'):
+		if (pause == 1):
+			pause = 0
+			Mafenetre.after(250,ActualiserCube)
+		else:
+			pause = 1
 	# Dans un cas autre, on actualise la direction
 	elif (touche=='Up' and direction != 'down'):
 		direction = 'up'
@@ -314,6 +327,8 @@ Entete.grid(row=0, column=1)
 # Un appui sur le clavier appelle la fonction Touche() qui actualisera la direction
 Mafenetre.bind('<Key>', Touche)
 # On appelle directement l'actualisation du cube, ce sera encuite bouclé dans la fonction
-Mafenetre.after(0,ActualiserCube)
+# Seulement si on est pas en pause
+if (pause != 1):
+	Mafenetre.after(250,ActualiserCube)
 # On rentre dans le while 1 qui permet de tout faire tourner
 Mafenetre.mainloop()
