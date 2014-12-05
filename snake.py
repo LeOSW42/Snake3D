@@ -32,6 +32,7 @@
 
 # Bibliothèques pour ftdi, calculs et gestion du temps
 import sys
+import os					  # Permet de sauver des fichiers (scores)
 from math import *
 from pylibftdi import Device
 from collections import deque # Permet de faires des opérations avancés sur les listes (rotate)
@@ -56,17 +57,55 @@ perdu = 0
 pause = 1
 # Snake (avec initialisation sur un bord)
 # 3 de long par défaut
-snake = deque([[5,3,3],[6,3,3],[7,3,3]])
-# Champignon du niveau 1 (FIXME : Pourrait être aléatoire)
-champi = deque([2,1,1])
+snake = deque([[6,3,3],[7,3,3],[8,3,3]])
+# Champignon du niveau 1
+champi = [0,0,0]
+champi[0] = randint(0, dimension-1)
+champi[1] = randint(0, dimension-1)
+champi[2] = randint(0, dimension-1)
 # Direction de départ
 direction = 'left'
 # Matrice des leds a allumer
 matrice_leds = []
-# Initialisation de la matrice de bonne taille avec des zéros (FIXME : Inutile)
-for i in range(dimension*dimension):
-	matrice_leds.append([0] * dimension)
+# Nom du joueur par défaut
+nom_joueur='anonyme'
 
+
+def Init():
+	global dimension
+	global perdu
+	global pause
+	global snake
+	global champi
+	global direction
+	global matrice_leds
+	global Mafenetre
+	global Entete
+	global DefClr
+
+	Entete = Label(Mafenetre, text="Niveau : 0", background = DefClr)
+
+	# Taille du cube
+	dimension = 8
+	# Drapeau mis à un si perdu
+	perdu = 0
+	# Drapeau de pause du jeu
+	pause = 1
+	# Snake (avec initialisation sur un bord)
+	# 3 de long par défaut
+	snake.clear()
+	snake.append([6,3,3])
+	snake.append([7,3,3])
+	snake.append([8,3,3])
+	# Champignon du niveau 1
+	champi = [0,0,0]
+	champi[0] = randint(0, dimension-1)
+	champi[1] = randint(0, dimension-1)
+	champi[2] = randint(0, dimension-1)
+	# Direction de départ
+	direction = 'left'
+	# Matrice des leds a allumer
+	matrice_leds = []
 
 
 ##############################################################
@@ -140,10 +179,13 @@ def ActualiserCube():
 	global champi
 	global perdu
 	global pause
+	global Mafenetre
+	global Entete
 	
-	# Dans un premier temps, si le jeu est fini, quitter
+	# Dans un premier temps, si le jeu est fini, mettre le fond en rouge
 	if (perdu==1):
-		Mafenetre.destroy()
+	#	Mafenetre.destroy()
+		Entete.configure(background='red')
 	
 	# On met en cache la queue du snake (dernière case) pour pouvoir agrandir le snake si besoin est
 	queue = [0,0,0]
@@ -272,14 +314,21 @@ def ActualiserCube():
 ##############################################################
 
 def Touche(event):
-	global direction
 	global pause
-	
+	global direction
+	global perdu
+
 	# On récupère la touche pressée
 	touche = event.keysym
 	# Si on presse x on quitte la fenêtre
 	if (touche=='Escape'):
 		Mafenetre.destroy()
+	# Si on presse Entrée on redémarre
+	if (touche=='Return'):
+		if (perdu==1):
+			Update_Scores()
+		Init()
+		Start()
 	# Si on presse espace on se met en pause ou on en sort
 	if (touche=='space'):
 		if (pause == 1):
@@ -301,7 +350,39 @@ def Touche(event):
 	elif (touche=='q' and direction != 'back'):
 		direction = 'front'
 
+def Nom_Joueur():
+	def Joueur(event):
+		global nom_joueur
+		if namefield.get() == '':
+			# Nom de joueur par défaut
+			nom_joueur='anonyme'
+		else :
+			nom_joueur=namefield.get()
+			Name_Screen.destroy()
+			
+	# Création de la fenêtre de sauvegarde
+	Name_Screen = Tk()
+	Name_Screen.title('Nom du Joueur')
+	BlablaNom = Label(Name_Screen, text="Nom du joueur pour les scores (Les scores sont enregistrés quand on redémarre la partie) :").grid()
+	global namefield
+	namefield= Entry(Name_Screen)
+	namefield.focus_force()
+	namefield.grid()
+	
+	# Bouton Save
+	saveBouton=Button(Name_Screen, text ='Ok')
+	saveBouton.bind("<Button-1>", Joueur)
+	Name_Screen.bind("<Return>", Joueur)
+	saveBouton.grid()
+	Name_Screen.mainloop()
 
+def Update_Scores():
+	global nom_joueur
+	global snake
+	scores = open("scores.txt","a+")
+	scores.write("%(nom)s : %(score)03d\r\n" %{"nom": nom_joueur, "score": len(snake)-3})
+	scores.close()
+	
 
 #####################################################################################################
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
@@ -309,28 +390,33 @@ def Touche(event):
 #####################################################################################################
 
 # ~~~~~~~~~~~~~~~~~~~ Fenêtre principale ~~~~~~~~~~~~~~~~~~~
+def Start():
+	global Mafenetre
+	global Entete
+	Mafenetre.title('Snake 3D')
 
-Mafenetre = Tk()
-Mafenetre.title('Snake 3D')
+	# On affiche l'image avec les contrôles
+	ImgDirections = Canvas(Mafenetre, width=216, height=216)
+	ImgDirections.grid(row=1, column=0)
+	jpgImgDirections = PhotoImage(file="directions.png")
+	ImgDirections.create_image(0, 0, image=jpgImgDirections, anchor=NW)
 
-# On affiche l'image avec les contrôles
-ImgDirections = Canvas(Mafenetre, width=216, height=216)
-ImgDirections.grid(row=1, column=1)
-jpgImgDirections = PhotoImage(file="directions.png")
-ImgDirections.create_image(0, 0, image=jpgImgDirections, anchor=NW)
+	# On met une ligne au dessus avec le niveau indiqué
+	Entete.grid(row=0, column=0)
+	Commandes = Label(Mafenetre, text="\nEchap : Quitter le jeu\nSpace : Mode pause\nEnter : Recommencer la partie", anchor=NW , justify=LEFT)
+	Commandes.grid(row=2, column=0, sticky = W, padx = 5)
 
-# On met une ligne au dessus avec le niveau indiqué
-# FIXME : C'est toujours zéro au lancement, calcul inutile
-Entete = Label(Mafenetre, text="Niveau : %s" %(len(snake)-3))
-Entete.grid(row=0, column=1)
-Commandes = Label(Mafenetre, text="Echap : Quitter le jeu\r\nSpace : Mode pause", justify=LEFT)
-Commandes.grid(row=2, column=1)
-
-# Un appui sur le clavier appelle la fonction Touche() qui actualisera la direction
-Mafenetre.bind('<Key>', Touche)
-# On appelle directement l'actualisation du cube, ce sera encuite bouclé dans la fonction
-# Seulement si on est pas en pause
-if (pause != 1):
+	# Un appui sur le clavier appelle la fonction Touche() qui actualisera la direction
+	Mafenetre.bind('<Key>', Touche)
+	# On appelle directement l'actualisation du cube, ce sera encuite bouclé dans la fonction
 	Mafenetre.after(250,ActualiserCube)
-# On rentre dans le while 1 qui permet de tout faire tourner
-Mafenetre.mainloop()
+	# On rentre dans le while 1 qui permet de tout faire tourner
+	Mafenetre.mainloop()
+
+Nom_Joueur()
+# Les champs de la fenêtre et la fenêtre doivent être globaux
+Mafenetre = Tk()
+# On met en cache la couleur de fond pour plus tard
+DefClr = Mafenetre.cget("bg")
+Entete = Label(Mafenetre, text="Niveau : 0")
+Start()
