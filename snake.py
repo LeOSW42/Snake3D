@@ -186,6 +186,8 @@ def ActualiserCube():
 	if (perdu==1):
 	#	Mafenetre.destroy()
 		Entete.configure(background='red')
+		# On met aussi à jour le fichier avec les scores
+		Update_Scores()
 	
 	# On met en cache la queue du snake (dernière case) pour pouvoir agrandir le snake si besoin est
 	queue = [0,0,0]
@@ -325,8 +327,6 @@ def Touche(event):
 		Mafenetre.destroy()
 	# Si on presse Entrée on redémarre
 	if (touche=='Return'):
-		if (perdu==1):
-			Update_Scores()
 		Init()
 		Start()
 	# Si on presse espace on se met en pause ou on en sort
@@ -350,20 +350,28 @@ def Touche(event):
 	elif (touche=='q' and direction != 'back'):
 		direction = 'front'
 
+
+##############################################################
+# Fonction qui demande à l'utilisateur son nom (Auteur : Léo)
+# Met par défaut anonyme
+##############################################################
+
 def Nom_Joueur():
 	def Joueur(event):
 		global nom_joueur
 		if namefield.get() == '':
 			# Nom de joueur par défaut
 			nom_joueur='anonyme'
+			Name_Screen.destroy()
 		else :
+			# Si le joueur a donné un nom on l'enregistre
 			nom_joueur=namefield.get()
 			Name_Screen.destroy()
 			
 	# Création de la fenêtre de sauvegarde
 	Name_Screen = Tk()
 	Name_Screen.title('Nom du Joueur')
-	BlablaNom = Label(Name_Screen, text="Nom du joueur pour les scores (Les scores sont enregistrés quand on redémarre la partie) :").grid()
+	BlablaNom = Label(Name_Screen, text="Nom du joueur pour les scores :").grid()
 	global namefield
 	namefield= Entry(Name_Screen)
 	namefield.focus_force()
@@ -376,10 +384,16 @@ def Nom_Joueur():
 	saveBouton.grid()
 	Name_Screen.mainloop()
 
+##############################################################
+# Fonction qui actualise le fichier avec les scores (Auteur : Léo)
+##############################################################
+
 def Update_Scores():
 	global nom_joueur
 	global snake
+	# On ouvre le fichier en lecture écriture sans l'effacer
 	scores = open("scores.txt","a+")
+	# On ajoute à la fin le nom suivi du niveau
 	scores.write("%(nom)s : %(score)03d\r\n" %{"nom": nom_joueur, "score": len(snake)-3})
 	scores.close()
 	
