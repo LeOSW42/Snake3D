@@ -408,7 +408,7 @@ def Update_Scores():
 	# On ouvre le fichier en lecture écriture sans l'effacer
 	scores = open("scores.txt","a+")
 	# On ajoute à la fin le nom suivi du niveau
-	scores.write("%(nom)s : %(score)03d\r\n" %{"nom": nom_joueur, "score": len(snake)-3})
+	scores.write("%(nom)s,%(score)03d\r\n" %{"nom": nom_joueur, "score": len(snake)-3})
 	scores.close()
 	
 
