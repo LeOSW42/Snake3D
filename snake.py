@@ -63,8 +63,10 @@ champi = [0,0,0]
 champi[0] = randint(0, dimension-1)
 champi[1] = randint(0, dimension-1)
 champi[2] = randint(0, dimension-1)
-# Direction de départ
+# Direction de départ voulue
 direction = 'left'
+# Direction en mémoire de l'état précédent
+last_direction = 'left'
 # Matrice des leds a allumer
 matrice_leds = []
 # Nom du joueur par défaut
@@ -78,6 +80,7 @@ def Init():
 	global snake
 	global champi
 	global direction
+	global last_direction
 	global matrice_leds
 	global Mafenetre
 	global Entete
@@ -104,6 +107,8 @@ def Init():
 	champi[2] = randint(0, dimension-1)
 	# Direction de départ
 	direction = 'left'
+	# Direction en mémoire de l'état précédent
+	last_direction = 'left'
 	# Matrice des leds a allumer
 	matrice_leds = []
 
@@ -176,6 +181,8 @@ def ActualiserCube():
 	global snake
 	global matrice_leds
 	global dimension
+	global last_direction
+	global direction
 	global champi
 	global perdu
 	global pause
@@ -184,7 +191,8 @@ def ActualiserCube():
 	
 	# Dans un premier temps, si le jeu est fini, mettre le fond en rouge
 	if (perdu==1):
-	#	Mafenetre.destroy()
+		# On se met en pause
+		pause = 1;
 		Entete.configure(background='red')
 		# On met aussi à jour le fichier avec les scores
 		Update_Scores()
@@ -206,26 +214,32 @@ def ActualiserCube():
 			snake[0][0] = snake[1][0]
 			snake[0][1] = snake[1][1] + 1
 			snake[0][2] = snake[1][2]
+			last_direction = 'up'
 		elif direction == 'down':
 			snake[0][0] = snake[1][0]
 			snake[0][1] = snake[1][1] - 1
 			snake[0][2] = snake[1][2]
+			last_direction = 'down'
 		elif direction == 'left':
 			snake[0][0] = snake[1][0] - 1
 			snake[0][1] = snake[1][1]
 			snake[0][2] = snake[1][2]
+			last_direction = 'left'
 		elif direction == 'right':
 			snake[0][0] = snake[1][0] + 1
 			snake[0][1] = snake[1][1]
 			snake[0][2] = snake[1][2]
+			last_direction = 'right'
 		elif direction == 'back':
 			snake[0][0] = snake[1][0]
 			snake[0][1] = snake[1][1]
 			snake[0][2] = snake[1][2] + 1
+			last_direction = 'back'
 		elif direction == 'front':
 			snake[0][0] = snake[1][0]
 			snake[0][1] = snake[1][1]
 			snake[0][2] = snake[1][2] - 1
+			last_direction = 'front'
 
 	# Gestion des erreurs pouvant entrainer une défaite
 	# Dans un premier temps, si on est encore en vie et que l'on rentre dans un mur
@@ -238,8 +252,7 @@ def ActualiserCube():
 		snake[len(snake)-1] = [queue[0],queue[1],queue[2]]
 	# On teste ici si le snake mange sa queue
 	# Pour chaque morceau de snake (tête exclue) on regarde si il n'est pas à la même position que la tête
-	# FIXME : Est-ce que le snake peut vraiment manger la deuxième et troisième case
-	for i in range(1,len(snake)):
+	for i in range(4,len(snake)):
 		if(snake[0][0] == snake[i][0] and snake[0][1] == snake[i][1] and snake[0][2] == snake[i][2]):
 			perdu = 1
 
@@ -317,6 +330,7 @@ def ActualiserCube():
 
 def Touche(event):
 	global pause
+	global last_direction
 	global direction
 	global perdu
 
@@ -333,21 +347,21 @@ def Touche(event):
 	if (touche=='space'):
 		if (pause == 1):
 			pause = 0
-			Mafenetre.after(250,ActualiserCube)
+			ActualiserCube()
 		else:
 			pause = 1
 	# Dans un cas autre, on actualise la direction
-	elif (touche=='Up' and direction != 'down'):
+	elif (touche=='Up' and last_direction != 'down'):
 		direction = 'up'
-	elif (touche=='Down' and direction != 'up'):
+	elif (touche=='Down' and last_direction != 'up'):
 		direction = 'down'
-	elif (touche=='Left' and direction != 'right'):
+	elif (touche=='Left' and last_direction != 'right'):
 		direction = 'left'
-	elif (touche=='Right' and direction != 'left'):
+	elif (touche=='Right' and last_direction != 'left'):
 		direction = 'right'
-	elif (touche=='a' and direction != 'front'):
+	elif (touche=='a' and last_direction != 'front'):
 		direction = 'back'
-	elif (touche=='q' and direction != 'back'):
+	elif (touche=='q' and last_direction != 'back'):
 		direction = 'front'
 
 
@@ -423,7 +437,7 @@ def Start():
 	# Un appui sur le clavier appelle la fonction Touche() qui actualisera la direction
 	Mafenetre.bind('<Key>', Touche)
 	# On appelle directement l'actualisation du cube, ce sera encuite bouclé dans la fonction
-	Mafenetre.after(250,ActualiserCube)
+	ActualiserCube()
 	# On rentre dans le while 1 qui permet de tout faire tourner
 	Mafenetre.mainloop()
 
