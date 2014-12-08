@@ -22,7 +22,7 @@ Et y coller :
 
 #### Sous Archlinux :
 
-    sudo pacman -S libftdi python-pip
+    sudo pacman -S libftdi python-pip tk
     sudo pip install pylibftdi
     sudo nano /etc/udev/rules.d/99-libftdi.rules
     
